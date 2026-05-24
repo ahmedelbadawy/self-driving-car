@@ -4,44 +4,257 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="manifest" href="./manifest.json">
-    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
-    </style>
-    <title>Car</title>
+    <title>Car Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #0a0e16;
+            --panel: #121826;
+            --panel-2: #0e1320;
+            --line: #1f2937;
+            --text: #e8edf5;
+            --muted: #7b8699;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.35);
+            --green: #34d399;
+            --amber: #fbbf24;
+            --red: #f87171;
+            --mono: "JetBrains Mono", ui-monospace, monospace;
+            --display: "Orbitron", var(--mono);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(900px 500px at 50% -10%, rgba(56,189,248,0.10), transparent 60%),
+                radial-gradient(700px 500px at 100% 110%, rgba(52,211,153,0.06), transparent 55%),
+                var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        .console {
+            width: 100%;
+            max-width: 440px;
+            background: linear-gradient(180deg, var(--panel), var(--panel-2));
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: 28px 26px 34px;
+            position: relative;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 26px;
+        }
+
+        .title {
+            font-family: var(--display);
+            font-weight: 900;
+            font-size: 20px;
+            letter-spacing: 3px;
+            color: var(--text);
+        }
+        .title span { color: var(--accent); }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+        .dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--red);
+            box-shadow: 0 0 0 0 var(--red);
+            transition: background .3s, box-shadow .3s;
+        }
+        .dot.online {
+            background: var(--green);
+            box-shadow: 0 0 10px 1px rgba(52,211,153,0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 8px 0 rgba(52,211,153,0.6); }
+            50% { box-shadow: 0 0 16px 3px rgba(52,211,153,0.4); }
+        }
+
+        .section-label {
+            font-size: 10px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 14px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .section-label::after {
+            content: ""; flex: 1; height: 1px;
+            background: linear-gradient(90deg, var(--line), transparent);
+        }
+
+        /* Mode buttons */
+        .modes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .mode-btn {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: .5px;
+            padding: 14px 8px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: var(--panel-2);
+            color: var(--text);
+            cursor: pointer;
+            transition: all .18s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .mode-btn .ico { font-size: 18px; line-height: 1; }
+        .mode-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        /* active (disabled) mode = currently selected */
+        .mode-btn:disabled {
+            cursor: default;
+            background: linear-gradient(180deg, rgba(56,189,248,0.18), rgba(56,189,248,0.06));
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: inset 0 0 18px rgba(56,189,248,0.12), 0 0 18px var(--accent-glow);
+        }
+
+        /* D-pad */
+        .dpad-wrap { display: flex; justify-content: center; margin-top: 6px; }
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 78px);
+            grid-template-rows: repeat(3, 78px);
+            gap: 10px;
+        }
+        .arrow {
+            font-family: var(--display);
+            font-size: 26px;
+            font-weight: 700;
+            border: 1px solid var(--line);
+            background: linear-gradient(180deg, #161d2e, #101626);
+            color: var(--text);
+            border-radius: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .12s ease;
+            user-select: none;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .arrow:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .arrow:active:not(:disabled) {
+            transform: scale(0.93);
+            background: linear-gradient(180deg, rgba(56,189,248,0.25), rgba(56,189,248,0.1));
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: inset 0 0 18px var(--accent-glow);
+        }
+        .arrow:disabled { opacity: 0.28; cursor: not-allowed; }
+
+        .up    { grid-column: 2; grid-row: 1; }
+        .left  { grid-column: 1; grid-row: 2; }
+        .hub   { grid-column: 2; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down  { grid-column: 2; grid-row: 3; }
+
+        .hub {
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            background: radial-gradient(circle, #0c1220, #070b13);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .hub::after {
+            content: "";
+            width: 14px; height: 14px; border-radius: 50%;
+            background: var(--line);
+        }
+
+        .footer {
+            margin-top: 26px;
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container" dir="rtl">
-        <div id="arrows" class="row">
-            <div class="col">
-                <button class="btn btn-primary arrow" onclick="arrow_clicked('left')">left</button>
-            </div>
-            <div class="col">
-                <button class="btn btn-primary arrow" onclick="arrow_clicked('up')">Up</button>
-            </div>
-            <div class="col">
-                <button class="btn btn-primary arrow" onclick="arrow_clicked('right')">right</button>
-            </div>
-            <div class="col">
-                <button class="btn btn-primary arrow" onclick="arrow_clicked('down')">down</button>
+    <div class="console">
+        <div class="topbar">
+            <div class="title">ROVER<span>//</span>CTRL</div>
+            <div class="status">
+                <span class="dot" id="conn-dot"></span>
+                <span id="conn-text">Offline</span>
             </div>
         </div>
-        <div id="modes" class="row">
-            <div class="col">
-                <button class="btn btn-success" id="mode1" onclick='mode_clicked("mode1")'>Track mode</button>
-            </div>
-            <div class="col">
-                <button class="btn btn-success" id="mode2" onclick='mode_clicked("mode2")' disabled>Manual Mode</button>
-            </div>
-            <div class="col">
-                <button class="btn btn-success" id="mode3" onclick='mode_clicked("mode3")'>Obstacle Mode</button>
+
+        <div class="section-label">Mode</div>
+        <div class="modes" id="modes">
+            <button class="mode-btn" id="mode1" onclick='mode_clicked("mode1")'>
+                <span class="ico">&#9678;</span> Track
+            </button>
+            <button class="mode-btn" id="mode2" onclick='mode_clicked("mode2")' disabled>
+                <span class="ico">&#9737;</span> Manual
+            </button>
+            <button class="mode-btn" id="mode3" onclick='mode_clicked("mode3")'>
+                <span class="ico">&#9888;</span> Obstacle
+            </button>
+        </div>
+
+        <div class="section-label">Drive</div>
+        <div class="dpad-wrap">
+            <div class="dpad" id="arrows">
+                <button class="btn arrow up"    onclick="arrow_clicked('up')">&#8593;</button>
+                <button class="btn arrow left"  onclick="arrow_clicked('left')">&#8592;</button>
+                <div class="hub"></div>
+                <button class="btn arrow right" onclick="arrow_clicked('right')">&#8594;</button>
+                <button class="btn arrow down"  onclick="arrow_clicked('down')">&#8595;</button>
             </div>
         </div>
+
+        <div class="footer">ESP32 &middot; WebSocket Link</div>
     </div>
 </body>
+
 <script src="./main.js"></script>
 <script>
     swInit();
@@ -52,15 +265,13 @@
     function disable_arrows() {
         let arrows = document.getElementsByClassName("arrow");
         for (let i = 0; i < arrows.length; i++) {
-            const arrow = arrows[i];
-            arrow.disabled = true;
+            arrows[i].disabled = true;
         }
     }
     function enable_arrows() {
         let arrows = document.getElementsByClassName("arrow");
         for (let i = 0; i < arrows.length; i++) {
-            const arrow = arrows[i];
-            arrow.disabled = false;
+            arrows[i].disabled = false;
         }
     }
 
@@ -89,15 +300,25 @@
             ws.send("obs");
         }
     }
+
     function arrow_clicked(arrow) {
         ws.send(arrow);
     }
-    // const ws = new WebSocket("wss://esp32-ws.herokuapp.com/client")
+
+    function setStatus(online) {
+        const dot = document.getElementById("conn-dot");
+        const txt = document.getElementById("conn-text");
+        dot.classList.toggle("online", online);
+        txt.textContent = online ? "Online" : "Offline";
+    }
+
     ws.onopen = () => {
         console.log("[CONNECTED]");
+        setStatus(true);
     }
     ws.onclose = () => {
         console.log("[DISCONNECTED]");
+        setStatus(false);
     }
     ws.onmessage = (msg) => {
         console.log(`[RECIEVED]: ${msg.data}`);
